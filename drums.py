@@ -20,9 +20,10 @@ rollOffset1, pitchOffset1, headingOffset1, accZ1 = 0.0, 0.0, 0.0, 0.0
 rollOffset2, pitchOffset2, headingOffset2, accZ2 = 0.0, 0.0, 0.0, 0.0
 # Calibration 
 calibrationCounter = 0
+unwrapCounter = 0 #Wont happen probably but i need this to go below and above a single circle
 
 # Function to unwrap angles
-def unwrap_stream(new_angle, prev_angle, wrap_threshold):
+def unwrap_stream(new_angle, prev_angle, wrap_threshold, unwrapCounter):
     angle = 0
     delta = new_angle - prev_angle
     if delta>wrap_threshold:
@@ -31,7 +32,7 @@ def unwrap_stream(new_angle, prev_angle, wrap_threshold):
         angle = new_angle+2*wrap_threshold
     else:
         angle = new_angle
-    return angle
+    return angle, unwrapCounter
 
 try:
     print("Receiving data (Press Ctrl+C to exit)...")
