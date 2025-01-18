@@ -60,8 +60,8 @@ void loop(void)
   sensors_event_t accevent2;
   bno.getEvent(&event);
   bno2.getEvent(&event2);
-  bno.getEvent(&accevent, Adafruit_BNO055::VECTOR_LINEARACCEL);
-  bno2.getEvent(&accevent2, Adafruit_BNO055::VECTOR_LINEARACCEL);
+  bno.getEvent(&accevent, Adafruit_BNO055::VECTOR_GYROSCOPE);
+  bno2.getEvent(&accevent2, Adafruit_BNO055::VECTOR_GYROSCOPE);
 
   /* Board layout:
          +----------+
@@ -74,14 +74,14 @@ void loop(void)
          +----------+
   */
 
-  // /* The processing sketch expects data as roll, pitch, heading */
+  /* The processing sketch expects data as roll, pitch, heading */
   Serial.print((float)event.orientation.x);
   Serial.print(F(" "));
   Serial.print((float)event.orientation.y);
   Serial.print(F(" "));
   Serial.print((float)event.orientation.z);
   Serial.print(F(" "));
-  Serial.print((float)accevent.acceleration.z);
+  Serial.print((float)accevent.gyro.z);
   Serial.print(F(" "));
   Serial.print((float)event2.orientation.x);
   Serial.print(F(" "));
@@ -89,7 +89,7 @@ void loop(void)
   Serial.print(F(" "));
   Serial.print((float)event2.orientation.z);
   Serial.print(F(" "));
-  Serial.print((float)accevent2.acceleration.z);
+  Serial.print((float)accevent2.gyro.z);
   Serial.println(F(""));
 
   delay(BNO055_SAMPLERATE_DELAY_MS);
