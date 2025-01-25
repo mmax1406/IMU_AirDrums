@@ -1,79 +1,84 @@
-import math 
+import numpy as np
 
 class IMUSensorData:
     def __init__(self, samples_for_calibration):
         self.heading = 0.0
-        self.roll = 0.0
+        self.w = 0.0
+        self.x = 0.0
+        self.y = 0.0
+        self.z = 0.0
+        self.omegaP = 0.0
+        
+        self.local_forward = np.array([0, 1, 0])
+        self.heading = 0.0
         self.pitch = 0.0
-        self.accZ = 0.0
-        self.prev_heading = 0.0
-        self.prev_pitch = 0.0
-        self.prev_roll = 0.0
+        
         self.offset_heading = 0.0
         self.offset_pitch = 0.0
-        self.offset_roll = 0.0
+        
         self.calibration_counter = 0
         self.samples_for_calibration = samples_for_calibration
-        self.unwrap_heading_counter = 0
-        self.unwrap_pitch_counter = 0
 
-    def update_raw_data(self, heading, roll, pitch, accZ):
-        # # All angler should be [-180 180]
-        # self.heading = math.degrees(math.atan2(math.sin(math.radians(heading)),math.cos(math.radians(heading))))
-        # self.roll = math.degrees(math.atan2(math.sin(math.radians(roll)),math.cos(math.radians(roll))))
-        # self.pitch = math.degrees(math.atan2(math.sin(math.radians(pitch)),math.cos(math.radians(pitch))))
-        # All angler should be [-180 180]
-        self.heading = heading
-        self.roll = roll
-        self.pitch = pitch
-        self.accZ = accZ
+    def adjust_zero_point(self, angle, zero_point):
+        relative_angle = (angle - zero_point + 180) % 360 - 180
+        return relative_angle
+
+    def update_raw_data(self, w, x, y, z, omegaP):
+        # The angles as recived
+        self.w = w
+        self.x = x
+        self.y = y
+        self.z = z
+        self.omegaP = omegaP
 
     def calculate_offset(self):
-        self.offset_heading += self.heading
-        self.offset_pitch += self.pitch
-        self.offset_roll += self.roll
         self.calibration_counter += 1
-        if self.calibration_counter == self.samples_for_calibration:
-            self.offset_heading /= self.samples_for_calibration
-            self.offset_pitch /= self.samples_for_calibration
-            self.offset_roll /= self.samples_for_calibration
+        self.offset_heading = self.offset_heading + (self.heading - self.offset_heading) / self.samples_for_calibration
+        self.offset_pitch = self.offset_pitch + (self.pitch - self.offset_pitch) / self.samples_for_calibration
 
     def apply_offset(self):
         self.heading -= self.offset_heading
         self.pitch -= self.offset_pitch
-        self.roll -= self.offset_roll
-
-    def unwrap_angle(self, new_angle, prev_angle, wrap_threshold, unwrap_counter):
-        delta = new_angle - prev_angle
-        if delta > wrap_threshold:
-            unwrap_counter -= 1
-        elif delta < -wrap_threshold:
-            unwrap_counter += 1
-        unwrapped_angle = new_angle + (unwrap_counter * 2 * wrap_threshold)
-        return unwrapped_angle, unwrap_counter
-
-    def process_data(self):
-        # if self.calibration_counter >= self.samples_for_calibration:
-        #     # self.apply_offset()
-
-        #     # We want to record the last wraped angle to the previous angle later on
-        #     tmpPitch = self.pitch
-        #     tmpHeading = self.heading
-        #     tmpRoll = self.roll
-
-        #     # # Unwrap angles
-        #     # self.pitch, self.unwrap_pitch_counter = self.unwrap_angle(
-        #     #     self.pitch, self.prev_pitch, 180, self.unwrap_pitch_counter
-        #     # )
-        #     # self.heading, self.unwrap_heading_counter = self.unwrap_angle(
-        #     #     self.heading, self.prev_heading, 180, self.unwrap_heading_counter
-        #     # )
-
-        # # Update previous values
-        # self.prev_heading = tmpHeading
-        # self.prev_pitch = tmpPitch
-        # self.prev_roll = tmpRoll
         
-        self.prev_heading = 0
-        self.prev_pitch = 0
-        self.prev_roll = 0
+    def quaternion_to_polar(self):
+        """
+        Convert quaternion orientation to a polar direction vector.
+        
+        Args:
+            qw, qx, qy, qz: Quaternion components.
+        
+        Returns:
+            azimuth: Angle in the X-Y plane (yaw) in degrees.
+            elevation: Vertical angle from the X-Y plane (pitch) in degrees.
+        """
+        qx, qy, qz, qw = self.x, self.y, self.z, self.w
+        # Quaternion rotation matrix
+        R = np.array([
+            [1 - 2*(qy**2 + qz**2), 2*(qx*qy - qw*qz), 2*(qx*qz + qw*qy)],
+            [2*(qx*qy + qw*qz), 1 - 2*(qx**2 + qz**2), 2*(qy*qz - qw*qx)],
+            [2*(qx*qz - qw*qy), 2*(qy*qz + qw*qx), 1 - 2*(qx**2 + qy**2)]
+        ])
+        
+        # Rotate the forward vector into the global frame
+        global_forward = R @ self.local_forward
+
+        # Compute polar coordinates
+        x, y, z = global_forward
+        azimuth = np.degrees(np.arctan2(y, x))  # Yaw: angle in the X-Y plane
+        elevation = np.degrees(np.arcsin(z / np.linalg.norm(global_forward)))  # Pitch: vertical angle
+
+        return azimuth, elevation
+
+    def process_data(self, w, x, y, z, omegaP):
+        # Update Raw data
+        self.update_raw_data(w, x, y, z, omegaP)
+        # Get the polar angles and save them
+        azimuth, elevation = self.quaternion_to_polar()
+        self.heading = azimuth
+        self.pitch = -elevation
+        # Either calibrate or apply the calibration
+        if self.calibration_counter > self.samples_for_calibration:
+            self.heading = self.adjust_zero_point(self.heading, self.offset_heading)
+            self.pitch = self.adjust_zero_point(self.pitch, self.offset_pitch)
+        else:
+            self.calculate_offset()

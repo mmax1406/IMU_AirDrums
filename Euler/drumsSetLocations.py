@@ -36,8 +36,15 @@ try:
                     heading2, roll2, pitch2, omegaP2 = map(float, values[4:])
                     
                     # Update raw data
-                    sensor1.process_data(heading1, roll1, pitch1, omegaP1)
-                    sensor2.process_data(heading2, roll2, pitch2, omegaP2)
+                    sensor1.update_raw_data(heading1, roll1, pitch1, omegaP1)
+                    sensor2.update_raw_data(heading2, roll2, pitch2, omegaP2)
+
+                    # if sensor1.calibration_counter < SAMPLES_FOR_CALIBRATION:
+                    #     sensor1.calculate_offset()
+                    #     sensor2.calculate_offset()
+                    # else:
+                    #     sensor1.process_data()
+                    #     sensor2.process_data()
 
                     print(f"L: H: {sensor1.heading:.3f}, P: {sensor1.pitch:.3f}, "
                             f"R: H: {sensor2.heading:.3f}, P: {sensor2.pitch:.3f}")                   
