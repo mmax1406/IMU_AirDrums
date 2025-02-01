@@ -9,9 +9,10 @@ class IMUSensorData:
         self.z = 0.0
         self.omegaP = 0.0
         
-        self.local_forward = np.array([0, 1, 0])
+        self.local_forward = np.array([0, 0, 1])
         self.heading = 0.0
         self.pitch = 0.0
+        self.prevPitch = 0.0
         
         self.offset_heading = 0.0
         self.offset_pitch = 0.0
@@ -29,7 +30,6 @@ class IMUSensorData:
         self.x = x
         self.y = y
         self.z = z
-        self.omegaP = omegaP
 
     def calculate_offset(self):
         self.calibration_counter += 1
@@ -76,6 +76,8 @@ class IMUSensorData:
         azimuth, elevation = self.quaternion_to_polar()
         self.heading = azimuth
         self.pitch = -elevation
+        self.omegaP = self.pitch - self.prevPitch
+        self.prevPitch = self.pitch
         # Either calibrate or apply the calibration
         if self.calibration_counter > self.samples_for_calibration:
             self.heading = self.adjust_zero_point(self.heading, self.offset_heading)
