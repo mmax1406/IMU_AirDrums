@@ -24,7 +24,7 @@ class IMUSensorData:
         relative_angle = (angle - zero_point + 180) % 360 - 180
         return relative_angle
 
-    def update_raw_data(self, w, x, y, z, omegaP):
+    def update_raw_data(self, w, x, y, z):
         # The angles as recived
         self.w = w
         self.x = x
@@ -69,13 +69,13 @@ class IMUSensorData:
 
         return azimuth, elevation
 
-    def process_data(self, w, x, y, z, omegaP):
+    def process_data(self, w, x, y, z):
         # Update Raw data
-        self.update_raw_data(w, x, y, z, omegaP)
+        self.update_raw_data(w, x, y, z)
         # Get the polar angles and save them
         azimuth, elevation = self.quaternion_to_polar()
         self.heading = azimuth
-        self.pitch = -elevation
+        self.pitch = elevation
         self.omegaP = self.pitch - self.prevPitch
         self.prevPitch = self.pitch
         # Either calibrate or apply the calibration
