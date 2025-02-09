@@ -16,7 +16,7 @@ last_save_time2 = 0 # For a time debounce mechanism
 debounceTime = 0.1 # Time delay one theres no hit detection
 
 # For data logging
-NumOfSamplesRecord = 3000
+NumOfSamplesRecord = 1000
 countRecord = 0
 MaDataSensor1 = []
 MaDataSensor2 = []
@@ -120,16 +120,16 @@ try:
                     if keyboard.is_pressed('r') or printCounter: # Calibrate them drums upon keboard press
                         if countRecord<NumOfSamplesRecord:
                             MaDataSensor1.append((w1, x1, y1, z1, Calib1, sensor1.heading, sensor1.pitch, time.time()))
-                            MaDataSensor2.append((w1, x1, y1, z1, Calib1, sensor1.heading, sensor1.pitch, time.time()))
+                            MaDataSensor2.append((w2, x2, y2, z2, Calib2, sensor2.heading, sensor2.pitch, time.time()))
                             printCounter = True
                         else:
                             with open("sensor_data1.txt", "w") as f:
                                 f.write("Sensor 1 Data:\n")
                                 for data in MaDataSensor1:
                                     f.write(",".join(map(str, data)) + "\n")
-                            # with open("sensor_data2.txt", "w") as f:
-                            #     for data in MaDataSensor2:
-                            #         f.write(",".join(map(str, data)) + "\n")
+                            with open("sensor_data2.txt", "w") as f:
+                                for data in MaDataSensor2:
+                                    f.write(",".join(map(str, data)) + "\n")
                             print("Data saved to sensor_data.txt")
                             printCounter = False
                             break
