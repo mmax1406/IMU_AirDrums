@@ -5,10 +5,11 @@
 
 /* Set the delay between fresh samples and init some vars*/
 #define BNO055_SAMPLERATE_DELAY_MS (10)
+#define LOOP_PERIOD_MS 25
 uint8_t system1 = 0, gyro1 = 0, accel1 = 0, mag1 = 0;
 uint8_t system2 = 0, gyro2 = 0, accel2 = 0, mag2 = 0;
 bool initialized = false; // Track if we passed the grace period
-unsigned long startTime;
+unsigned long startTime, lastUpdateTime;
 
 // Check I2C device address and correct line below (by default address is 0x29 or 0x28) id, address
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x29);
@@ -57,54 +58,54 @@ void setup(void)
   bno2.setExtCrystalUse(true);
 
   delay(1000);
+  startTime = millis();  // Record startup time
+  lastUpdateTime = millis(); // Initialize loop timing
 }
 
 void loop(void)
 {
-  sensors_event_t gravity_event;
-  bno.getEvent(&gravity_event, Adafruit_BNO055::VECTOR_GRAVITY);
 
-  // Mechanism for disconnections
-  // Allow 3 seconds before checking for sensor failure
-  if ((millis() - startTime) > 3000) {
-    initialized = true;  // After 3 seconds, enable error checking
-  }  
-  // // Check if all gravity values are zero (indicating a sensor issue)
-  // if (initialized && gravity_event.acceleration.x == 0.0 && 
-  //     gravity_event.acceleration.y == 0.0 && 
-  //     gravity_event.acceleration.z == 0.0) 
-  // {
-  //   attemptReconnect();
-  //   return; // Skip the rest of the loop until the sensor is fixed
-  // }
+  // Run at 40Hz (every 25ms)
+  unsigned long currentTime = millis();
 
-  // Normal operation sensor1
-  imu::Quaternion quat = bno.getQuat();
-  bno.getCalibration(&system1, &gyro1, &accel1, &mag1);
-  Serial.print(quat.w(), 4);
-  Serial.print(F(" "));
-  Serial.print(quat.x(), 4);
-  Serial.print(F(" "));
-  Serial.print(quat.y(), 4);
-  Serial.print(F(" "));
-  Serial.print(quat.z(), 4);
-  Serial.print(F(" "));
-  Serial.print(system1, DEC);
-  Serial.print(F(" "));
+  if (currentTime - lastUpdateTime >= LOOP_PERIOD_MS) {
+    lastUpdateTime = currentTime;
 
-  // Normal operation sensor2
-  imu::Quaternion quat2 = bno2.getQuat();
-  bno2.getCalibration(&system2, &gyro2, &accel2, &mag2);
-  Serial.print(quat2.w(), 4);
-  Serial.print(F(" "));
-  Serial.print(quat2.x(), 4);
-  Serial.print(F(" "));
-  Serial.print(quat2.y(), 4);
-  Serial.print(F(" "));
-  Serial.print(quat2.z(), 4);
-  Serial.print(F(" "));
-  Serial.println(system2, DEC);
+    // Mechanism for disconnections
+    // Allow 3 seconds before checking for sensor failure
+    if ((millis() - startTime) > 3000) {
+      initialized = true;  // After 3 seconds, enable error checking
+    }  
+    // Check if all values are zero for more than N consecutive samples (indicating a sensor issue)
 
-  delay(BNO055_SAMPLERATE_DELAY_MS);
+    // Normal operation sensor1
+    imu::Quaternion quat = bno.getQuat();
+    bno.getCalibration(&system1, &gyro1, &accel1, &mag1);
+    Serial.print(quat.w(), 4);
+    Serial.print(F(" "));
+    Serial.print(quat.x(), 4);
+    Serial.print(F(" "));
+    Serial.print(quat.y(), 4);
+    Serial.print(F(" "));
+    Serial.print(quat.z(), 4);
+    Serial.print(F(" "));
+    Serial.print(system1, DEC);
+    Serial.print(F(" "));
+
+    // Normal operation sensor2
+    imu::Quaternion quat2 = bno2.getQuat();
+    bno2.getCalibration(&system2, &gyro2, &accel2, &mag2);
+    Serial.print(quat2.w(), 4);
+    Serial.print(F(" "));
+    Serial.print(quat2.x(), 4);
+    Serial.print(F(" "));
+    Serial.print(quat2.y(), 4);
+    Serial.print(F(" "));
+    Serial.print(quat2.z(), 4);
+    Serial.print(F(" "));
+    Serial.println(system2, DEC);
+
+    delay(BNO055_SAMPLERATE_DELAY_MS);
+  }
 }
 

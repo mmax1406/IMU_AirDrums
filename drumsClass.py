@@ -1,7 +1,7 @@
 import numpy as np
 
 class IMUSensorData:
-    def __init__(self, samples_for_calibration):
+    def __init__(self, samples_for_calibration, FilterAlpha=0.1):
         self.heading = 0.0
         self.w = 0.0
         self.x = 0.0
@@ -12,13 +12,22 @@ class IMUSensorData:
         self.local_forward = np.array([0, 0, 1])
         self.heading = 0.0
         self.pitch = 0.0
-        self.prevPitch = 0.0
+        self.FiltHeading = 0.0
+        self.FiltPitch = 0.0
+        self.omegaP = 0.0
+        self.prevOmegaP = 0.0
+        self.accP = 0.0
         
         self.offset_heading = 0.0
         self.offset_pitch = 0.0
         
         self.calibration_counter = 0
         self.samples_for_calibration = samples_for_calibration
+        self.FilterAlpha = FilterAlpha
+
+    def filterData(self):
+        self.FiltHeading = self.FiltHeading*(1-self.FilterAlpha) + self.heading*self.FilterAlpha
+        self.FiltPitch = self.FiltPitch*(1-self.FilterAlpha) + self.pitch*self.FilterAlpha
 
     def adjust_zero_point(self, angle, zero_point):
         relative_angle = (angle - zero_point + 180) % 360 - 180
@@ -75,9 +84,10 @@ class IMUSensorData:
         # Get the polar angles and save them
         azimuth, elevation = self.quaternion_to_polar()
         self.heading = azimuth
-        self.pitch = elevation
-        self.omegaP = self.pitch - self.prevPitch
-        self.prevPitch = self.pitch
+        self.accP = self.omegaP - (elevation - self.pitch) #Calc accleration of pitch
+        self.omegaP = elevation - self.pitch  #Calc rate of pitch
+        self.pitch = elevation #Calc pitch
+
         # Either calibrate or apply the calibration
         if self.calibration_counter > self.samples_for_calibration:
             self.heading = self.adjust_zero_point(self.heading, self.offset_heading)
