@@ -1,13 +1,12 @@
 import numpy as np
 
 class IMUSensorData:
-    def __init__(self, samples_for_calibration, FilterAlpha=0.1):
+    def __init__(self, samples_for_calibration, FilterAlpha=0.05):
         self.heading = 0.0
         self.w = 0.0
         self.x = 0.0
         self.y = 0.0
         self.z = 0.0
-        self.omegaP = 0.0
         
         self.local_forward = np.array([0, 0, 1])
         self.heading = 0.0
@@ -15,7 +14,6 @@ class IMUSensorData:
         self.FiltHeading = 0.0
         self.FiltPitch = 0.0
         self.omegaP = 0.0
-        self.prevOmegaP = 0.0
         self.accP = 0.0
         
         self.offset_heading = 0.0
@@ -86,11 +84,12 @@ class IMUSensorData:
         self.heading = azimuth
         self.accP = self.omegaP - (elevation - self.pitch) #Calc accleration of pitch
         self.omegaP = elevation - self.pitch  #Calc rate of pitch
-        self.pitch = elevation #Calc pitch
+        self.pitch = elevation #Calc pitch       
 
         # Either calibrate or apply the calibration
         if self.calibration_counter > self.samples_for_calibration:
             self.heading = self.adjust_zero_point(self.heading, self.offset_heading)
             self.pitch = self.adjust_zero_point(self.pitch, self.offset_pitch)
+            self.filterData()
         else:
             self.calculate_offset()

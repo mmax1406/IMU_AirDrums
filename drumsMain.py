@@ -10,13 +10,13 @@ ser = serial.Serial('COM3', 115200, timeout=0.05)  # Use a short timeout for non
 
 # Constants
 SAMPLES_FOR_CALIBRATION = 100
-HIT_THRESHOLD = -8 # Threshold for pitch rate detection (adjust as needed)
+HIT_THRESHOLD = 8 # Threshold for pitch rate detection (adjust as needed)
 last_save_time1 = 0 # For a time debounce mechanism
 last_save_time2 = 0 # For a time debounce mechanism
 debounceTime = 0.1 # Time delay one theres no hit detection
 
 # For data logging
-NumOfSamplesRecord = 1000
+NumOfSamplesRecord = 2000
 countRecord = 0
 MaDataSensor1 = []
 MaDataSensor2 = []
@@ -53,9 +53,9 @@ def send_midi_note(note, velocity=127, duration=0.05):
 def is_within_hit_zone(sensor_heading, sensor_pitch):
     # Check if the current sensor angles are within the hit zone of any drum hit location.
     note = 0
-    if sensor_heading<0 and sensor_pitch>45:
+    if sensor_heading<0 and sensor_pitch>40:
         note = 51
-    elif sensor_heading>0 and sensor_pitch>45:
+    elif sensor_heading>0 and sensor_pitch>40:
         note = 49
     elif sensor_heading<-25:
         note = 41
@@ -90,24 +90,22 @@ try:
                     if Calib1>0:
                         sensor1.process_data(w1, x1, y1, z1)
                         # Chek for hitting
-                        hit1 = is_within_hit_zone(sensor1.heading, sensor1.pitch)
+                        hit1 = is_within_hit_zone(sensor1.FiltHeading, sensor1.FiltPitch)
                         # Check if a drum hit occurs for sensor 1 and send MIDI if so 
-                        if (
-                            hit1 > 0 and sensor1.omegaP <= HIT_THRESHOLD and (time.time()-last_save_time1)>debounceTime
-                        ):
-                            send_midi_note(hit1)
-                            last_save_time1 = time.time()
+                        if (sensor1.accP >= HIT_THRESHOLD and (time.time()-last_save_time1)>debounceTime):
+                            if hit1 > 0:
+                                send_midi_note(hit1)
+                                last_save_time1 = time.time()
 
                     if Calib2>0:
                         sensor2.process_data(w2, x2, y2, z2)
                         # Chek for hitting
-                        hit2 = is_within_hit_zone(sensor2.heading, sensor2.pitch)
+                        hit2 = is_within_hit_zone(sensor2.FiltHeading, sensor2.FiltPitch)
                         # Check if a drum hit occurs for sensor 2 and send MIDI if so 
-                        if (
-                            hit2 > 0 and sensor2.omegaP <= HIT_THRESHOLD and (time.time()-last_save_time2)>debounceTime
-                        ):
-                            send_midi_note(hit2)
-                            last_save_time2 = time.time()
+                        if (sensor2.accP >= HIT_THRESHOLD and (time.time()-last_save_time2)>debounceTime):
+                            if hit2 > 0:
+                                send_midi_note(hit2)
+                                last_save_time2 = time.time()
 
 
                     print(f"L: H: {sensor1.heading:.3f}, P: {sensor1.pitch:.3f}, "
@@ -119,8 +117,8 @@ try:
                         
                     if keyboard.is_pressed('r') or printCounter: # Calibrate them drums upon keboard press
                         if countRecord<NumOfSamplesRecord:
-                            MaDataSensor1.append((w1, x1, y1, z1, Calib1, sensor1.heading, sensor1.pitch, time.time()))
-                            MaDataSensor2.append((w2, x2, y2, z2, Calib2, sensor2.heading, sensor2.pitch, time.time()))
+                            MaDataSensor1.append((w1, x1, y1, z1, Calib1, sensor1.heading, sensor1.pitch, sensor1.omegaP, sensor1.accP, time.time()))
+                            MaDataSensor2.append((w2, x2, y2, z2, Calib2, sensor2.heading, sensor2.pitch, sensor1.omegaP, sensor1.accP, time.time()))
                             printCounter = True
                         else:
                             with open("sensor_data1.txt", "w") as f:

@@ -3,7 +3,7 @@ clear all; close all; clc;
 Sensor1 = readmatrix('sensor_data1.txt');
 Sensor2 = readmatrix('sensor_data2.txt');
 
-time1 = Sensor1(:,8)-Sensor1(1,8);
+time1 = Sensor1(:,10)-Sensor1(1,10);
 fixedHeading = Sensor1(:,6);
 FilteredPitch1(1) = Sensor1(1,7);
 FilteredHeading1(1) = fixedHeading(1);
@@ -28,10 +28,10 @@ plot(time1, FilteredPitch1,'-*')
 hold off; grid on; ylabel('Pitch');
 
 ax4 = subplot(5,1,4); 
-plot(time1(1:(end-1)), diff(Sensor1(:,7)),'-*'); grid on; ylabel('omegaPitch');
+plot(time1, Sensor1(:,8),'-*'); grid on; ylabel('omegaPitch');
 
 ax5 = subplot(5,1,5); 
-plot(time1(1:(end-2)), diff(diff(Sensor1(:,7))),'-*'); grid on; ylabel('omegaPitch');
+plot(time1, Sensor1(:,9),'-*'); grid on; ylabel('accPitch');
 
 linkaxes([ax1 ax2 ax3 ax4 ax5],'x')
 
