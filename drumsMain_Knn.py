@@ -4,7 +4,6 @@ from drumsClass import IMUSensorData
 import keyboard  # For keypress detection
 import time
 import rtmidi
-import os
 
 # Set up the serial connection
 ser = serial.Serial('COM3', 115200, timeout=0.05)  # Use a short timeout for non-blocking behavior
@@ -17,7 +16,7 @@ last_save_time2 = 0 # For a time debounce mechanism
 debounceTime = 0.1 # Time delay one theres no hit detection
 
 # For data logging
-NumOfSamplesRecord = 1000
+NumOfSamplesRecord = 2000
 countRecord = 0
 MaDataSensor1 = []
 MaDataSensor2 = []
@@ -37,25 +36,6 @@ if available_ports:
     midiout.open_port(0)
 else:
     midiout.open_virtual_port("MyVirtualOutput")
-
-def save_data():
-    """Handles saving the recorded data after user input."""
-    folder = "records"
-    os.makedirs(folder, exist_ok=True)  # Create the folder if it doesn't exist
-
-    filename = input("Enter a filename (without extension): ")
-    filepath1 = os.path.join(folder, f"{filename}_sensor1.txt")
-    filepath2 = os.path.join(folder, f"{filename}_sensor2.txt")
-
-    with open(filepath1, "w") as f:
-        for data in MaDataSensor1:
-            f.write(",".join(map(str, data)) + "\n")
-
-    with open(filepath2, "w") as f:
-        for data in MaDataSensor2:
-            f.write(",".join(map(str, data)) + "\n")
-
-    print(f"Data saved in {folder} as {filename}_sensor1.txt and {filename}_sensor2.txt")
 
 def send_midi_note(note, velocity=127, duration=0.05):
     # Function to send MIDI note
@@ -127,25 +107,30 @@ try:
                                 send_midi_note(hit2)
                                 last_save_time2 = time.time()
 
+
                     print(f"L: H: {sensor1.heading:.3f}, P: {sensor1.pitch:.3f}, "
                             f"R: H: {sensor2.heading:.3f}, P: {sensor2.pitch:.3f}") 
 
-                    if keyboard.is_pressed('c'): # Calibrate them drums upon keboard press (I think i have mistake in the Average calculator)
+                    if keyboard.is_pressed('c'): # Calibrate them drums upon keboard press
                         sensor1.calibration_counter = 0.0
                         sensor2.calibration_counter = 0.0
                         
                     if keyboard.is_pressed('r') or printCounter: # Calibrate them drums upon keboard press
                         if countRecord<NumOfSamplesRecord:
-                            MaDataSensor1.append((1,w1, x1, y1, z1, Calib1, sensor1.heading, sensor1.pitch, sensor1.omegaP, sensor1.accP, time.time()))
-                            MaDataSensor2.append((2,w2, x2, y2, z2, Calib2, sensor2.heading, sensor2.pitch, sensor1.omegaP, sensor1.accP, time.time()))
+                            MaDataSensor1.append((w1, x1, y1, z1, Calib1, sensor1.heading, sensor1.pitch, sensor1.omegaP, sensor1.accP, time.time()))
+                            MaDataSensor2.append((w2, x2, y2, z2, Calib2, sensor2.heading, sensor2.pitch, sensor1.omegaP, sensor1.accP, time.time()))
                             printCounter = True
                         else:
-                            print("Recording finished. Enter filename to save.")
-                            save_data()
-                            printCounter = False  # Stop recording
-                            countRecord = 0  # Reset counter
-                            MaDataSensor1.clear()  # Clear previous data
-                            MaDataSensor2.clear()
+                            with open("sensor_data1.txt", "w") as f:
+                                f.write("Sensor 1 Data:\n")
+                                for data in MaDataSensor1:
+                                    f.write(",".join(map(str, data)) + "\n")
+                            with open("sensor_data2.txt", "w") as f:
+                                for data in MaDataSensor2:
+                                    f.write(",".join(map(str, data)) + "\n")
+                            print("Data saved to sensor_data.txt")
+                            printCounter = False
+                            break
                         countRecord += 1
 
 except KeyboardInterrupt:

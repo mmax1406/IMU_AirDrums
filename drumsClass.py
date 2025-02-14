@@ -40,8 +40,8 @@ class IMUSensorData:
 
     def calculate_offset(self):
         self.calibration_counter += 1
-        self.offset_heading = self.offset_heading + (self.heading - self.offset_heading) / self.samples_for_calibration
-        self.offset_pitch = self.offset_pitch + (self.pitch - self.offset_pitch) / self.samples_for_calibration
+        self.offset_heading = self.offset_heading + (self.heading - self.offset_heading) / self.calibration_counter 
+        self.offset_pitch = self.offset_pitch + (self.pitch - self.offset_pitch) / self.calibration_counter
 
     def apply_offset(self):
         self.heading -= self.offset_heading

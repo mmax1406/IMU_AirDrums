@@ -73,7 +73,7 @@ void loop(void)
 
     // Mechanism for disconnections
     // Allow 3 seconds before checking for sensor failure
-    if ((millis() - startTime) > 3000) {
+    if ((currentTime - startTime) > 3000) {
       initialized = true;  // After 3 seconds, enable error checking
     }  
     // Check if all values are zero for more than N consecutive samples (indicating a sensor issue)

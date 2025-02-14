@@ -36,3 +36,12 @@ plot(time1, Sensor1(:,9),'-*'); grid on; ylabel('accPitch');
 linkaxes([ax1 ax2 ax3 ax4 ax5],'x')
 
 % Lets Test Some scripts on the yaw data
+LPF = tf(1,[1/(0.1*2*pi)^2 1],0.025);
+timeTmp = 0.025*(0:1999);
+y = lsim(LPF,fixedHeading*pi/180,timeTmp);
+figure(); 
+plot(y)
+hold on
+plot(fixedHeading*pi/180)
+hold off
+
