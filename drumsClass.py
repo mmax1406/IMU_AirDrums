@@ -1,7 +1,10 @@
+from collections import deque
 import numpy as np
 
+
 class IMUSensorData:
-    def __init__(self, samples_for_calibration, FilterAlpha=0.05):
+    def __init__(self, samples_for_calibration, windowSize=5):
+        self.data_window = deque(maxlen=windowSize)
         self.heading = 0.0
         self.w = 0.0
         self.x = 0.0
@@ -21,11 +24,6 @@ class IMUSensorData:
         
         self.calibration_counter = 0
         self.samples_for_calibration = samples_for_calibration
-        self.FilterAlpha = FilterAlpha
-
-    def filterData(self):
-        self.FiltHeading = self.FiltHeading*(1-self.FilterAlpha) + self.heading*self.FilterAlpha
-        self.FiltPitch = self.FiltPitch*(1-self.FilterAlpha) + self.pitch*self.FilterAlpha
 
     def adjust_zero_point(self, angle, zero_point):
         relative_angle = (angle - zero_point + 180) % 360 - 180
@@ -90,6 +88,7 @@ class IMUSensorData:
         if self.calibration_counter > self.samples_for_calibration:
             self.heading = self.adjust_zero_point(self.heading, self.offset_heading)
             self.pitch = self.adjust_zero_point(self.pitch, self.offset_pitch)
-            self.filterData()
+            
+            self.data_window.append([self.heading, self.pitch])
         else:
             self.calculate_offset()

@@ -21,11 +21,12 @@ NumOfSamplesRecord = 1000
 countRecord = 0
 MaDataSensor1 = []
 MaDataSensor2 = []
-printCounter = False
+printFlag = False
+windowSize = 5
 
 # Initialize sensor objects
-sensor1 = IMUSensorData(SAMPLES_FOR_CALIBRATION)
-sensor2 = IMUSensorData(SAMPLES_FOR_CALIBRATION)
+sensor1 = IMUSensorData(SAMPLES_FOR_CALIBRATION, windowSize)
+sensor2 = IMUSensorData(SAMPLES_FOR_CALIBRATION, windowSize)
 
 # MIDI channel (0-15). Channel 10 is usually reserved for drums in General MIDI.
 MIDI_CHANNEL = 9  # MIDI channels are 0-indexed, so 9 = Channel 10
@@ -110,7 +111,7 @@ try:
                     if Calib1>0:
                         sensor1.process_data(w1, x1, y1, z1)
                         # Chek for hitting
-                        hit1 = is_within_hit_zone(sensor1.FiltHeading, sensor1.FiltPitch)
+                        hit1 = is_within_hit_zone(sensor1.heading, sensor1.pitch)
                         # Check if a drum hit occurs for sensor 1 and send MIDI if so 
                         if (sensor1.accP >= HIT_THRESHOLD and (time.time()-last_save_time1)>debounceTime):
                             if hit1 > 0:
@@ -120,7 +121,7 @@ try:
                     if Calib2>0:
                         sensor2.process_data(w2, x2, y2, z2)
                         # Chek for hitting
-                        hit2 = is_within_hit_zone(sensor2.FiltHeading, sensor2.FiltPitch)
+                        hit2 = is_within_hit_zone(sensor2.heading, sensor2.pitch)
                         # Check if a drum hit occurs for sensor 2 and send MIDI if so 
                         if (sensor2.accP >= HIT_THRESHOLD and (time.time()-last_save_time2)>debounceTime):
                             if hit2 > 0:
@@ -134,15 +135,17 @@ try:
                         sensor1.calibration_counter = 0.0
                         sensor2.calibration_counter = 0.0
                         
-                    if keyboard.is_pressed('r') or printCounter: # Calibrate them drums upon keboard press
+                    if keyboard.is_pressed('r') or printFlag: # Calibrate them drums upon keboard press
+                        if printFlag == False:
+                            print('Recording start')
                         if countRecord<NumOfSamplesRecord:
                             MaDataSensor1.append((1,w1, x1, y1, z1, Calib1, sensor1.heading, sensor1.pitch, sensor1.omegaP, sensor1.accP, time.time()))
                             MaDataSensor2.append((2,w2, x2, y2, z2, Calib2, sensor2.heading, sensor2.pitch, sensor1.omegaP, sensor1.accP, time.time()))
-                            printCounter = True
+                            printFlag = True
                         else:
                             print("Recording finished. Enter filename to save.")
                             save_data()
-                            printCounter = False  # Stop recording
+                            printFlag = False  # Stop recording
                             countRecord = 0  # Reset counter
                             MaDataSensor1.clear()  # Clear previous data
                             MaDataSensor2.clear()
