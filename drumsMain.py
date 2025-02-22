@@ -11,7 +11,7 @@ ser = serial.Serial('COM3', 115200, timeout=0.05)  # Use a short timeout for non
 
 # Constants
 SAMPLES_FOR_CALIBRATION = 100
-HIT_THRESHOLD = 8 # Threshold for pitch rate detection (adjust as needed)
+HIT_THRESHOLD = -8 # Threshold for pitch rate detection (adjust as needed)
 last_save_time1 = 0 # For a time debounce mechanism
 last_save_time2 = 0 # For a time debounce mechanism
 debounceTime = 0.1 # Time delay one theres no hit detection
@@ -58,32 +58,39 @@ def save_data():
 
     print(f"Data saved in {folder} as {filename}_sensor1.txt and {filename}_sensor2.txt")
 
-def send_midi_note(note, velocity=127, duration=0.05):
+def send_midi_notes(notes, velocity=127, duration=0.05):
     # Function to send MIDI note
-    # Send Note On message
-    note_on = [0x90 + MIDI_CHANNEL, note, velocity]  # 0x90 = Note On
-    midiout.send_message(note_on)
+    for note in notes:
+        if note>0:
+            # Send Note On message
+            note_on = [0x90 + MIDI_CHANNEL, note, velocity]  # 0x90 = Note On
+            midiout.send_message(note_on)
 
     # Wait for the duration of the note
     time.sleep(duration)
 
-    # Send Note Off message
-    note_off = [0x80 + MIDI_CHANNEL, note, 0]  # 0x80 = Note Off
-    midiout.send_message(note_off)
+    for note in notes:
+        if note>0:
+            # Send Note Off message
+            note_off = [0x80 + MIDI_CHANNEL, note, 0]  # 0x80 = Note Off
+            midiout.send_message(note_off)
 
 def is_within_hit_zone(sensor_heading, sensor_pitch):
-    # Check if the current sensor angles are within the hit zone of any drum hit location.
+    # Check if the current sensor angles are within the hit zone of any drum hit location. (Maybe add HYSTERSIS HERE?)
     note = 0
-    if sensor_heading<0 and sensor_pitch>40:
-        note = 51
-    elif sensor_heading>0 and sensor_pitch>40:
-        note = 49
-    elif sensor_heading<-25:
-        note = 41
-    elif sensor_heading>-25 and sensor_heading<25:
-        note = 38
-    elif sensor_heading > 25:
-        note = 42
+    if sensor_pitch<30:
+        if sensor_heading<-25:
+            note = 41
+        elif sensor_heading>-25 and sensor_heading<25:
+            note = 38
+        elif sensor_heading > 25:
+            note = 42    
+    else:
+        if sensor_heading<0:
+            note = 51
+        elif sensor_heading>0:
+            note = 49
+
     return note
 
 try:
@@ -101,36 +108,41 @@ try:
                     w1, x1, y1, z1, Calib1 = map(float, values[:5])
                     w2, x2, y2, z2, Calib2 = map(float, values[5:])
 
-                    # Process sensor 1
+                    # Flag according to sensor's dara sheet that check whether its ok
                     if Calib1 == 0:
                         print('Sensor 1 No good')
- 
                     if Calib2 == 0:
                         print('Sensor 2 No good')
 
+                    # Deccide if an air drum was hit
                     if Calib1>0:
-                        sensor1.process_data(w1, x1, y1, z1)
-                        # Chek for hitting
-                        hit1 = is_within_hit_zone(sensor1.heading, sensor1.pitch)
-                        # Check if a drum hit occurs for sensor 1 and send MIDI if so 
-                        if (sensor1.accP >= HIT_THRESHOLD and (time.time()-last_save_time1)>debounceTime):
-                            if hit1 > 0:
-                                send_midi_note(hit1)
-                                last_save_time1 = time.time()
-
+                        sensor1.process_data(w1, x1, y1, z1)                    
+                        # Check if a drum hit occurs for sensor 1
+                        if (sensor1.accP <= HIT_THRESHOLD and (time.time()-last_save_time1)>debounceTime):
+                            hit1 = is_within_hit_zone(sensor1.heading, sensor1.pitch)
+                            last_save_time1 = time.time()
+                        else:
+                            hit1 = 0    
                     if Calib2>0:
                         sensor2.process_data(w2, x2, y2, z2)
                         # Chek for hitting
                         hit2 = is_within_hit_zone(sensor2.heading, sensor2.pitch)
-                        # Check if a drum hit occurs for sensor 2 and send MIDI if so 
-                        if (sensor2.accP >= HIT_THRESHOLD and (time.time()-last_save_time2)>debounceTime):
-                            if hit2 > 0:
-                                send_midi_note(hit2)
-                                last_save_time2 = time.time()
+                        # Check if a drum hit occurs for sensor 2 
+                        if (sensor2.accP <= HIT_THRESHOLD and (time.time()-last_save_time2)>debounceTime):
+                            hit2 = is_within_hit_zone(sensor2.heading, sensor2.pitch)
+                            last_save_time2 = time.time()
+                        else:
+                            hit2 = 0
 
+                    # If at least one drum was hit than send the MIDI signal
+                    if hit1 != 0 or hit2 != 0:
+                        send_midi_notes([hit1, hit2])
+
+                    # Print the angles for fun
                     print(f"L: H: {sensor1.heading:.3f}, P: {sensor1.pitch:.3f}, "
                             f"R: H: {sensor2.heading:.3f}, P: {sensor2.pitch:.3f}") 
 
+                    # Some keyboard options for user
                     if keyboard.is_pressed('c'): # Calibrate them drums upon keboard press (I think i have mistake in the Average calculator)
                         sensor1.calibration_counter = 0.0
                         sensor2.calibration_counter = 0.0
@@ -139,8 +151,8 @@ try:
                         if printFlag == False:
                             print('Recording start')
                         if countRecord<NumOfSamplesRecord:
-                            MaDataSensor1.append((1,w1, x1, y1, z1, Calib1, sensor1.heading, sensor1.pitch, sensor1.omegaP, sensor1.accP, time.time()))
-                            MaDataSensor2.append((2,w2, x2, y2, z2, Calib2, sensor2.heading, sensor2.pitch, sensor1.omegaP, sensor1.accP, time.time()))
+                            MaDataSensor1.append((hit1, w1, x1, y1, z1, Calib1, sensor1.heading, sensor1.pitch, sensor1.omegaP, sensor1.accP, time.time()))
+                            MaDataSensor2.append((hit2, w2, x2, y2, z2, Calib2, sensor2.heading, sensor2.pitch, sensor1.omegaP, sensor1.accP, time.time()))
                             printFlag = True
                         else:
                             print("Recording finished. Enter filename to save.")
