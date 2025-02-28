@@ -15,6 +15,7 @@ HIT_THRESHOLD = -8 # Threshold for pitch rate detection (adjust as needed)
 last_save_time1 = 0 # For a time debounce mechanism
 last_save_time2 = 0 # For a time debounce mechanism
 debounceTime = 0.1 # Time delay one theres no hit detection
+hystersisAngle = 40
 
 # For data logging
 NumOfSamplesRecord = 1000
@@ -23,6 +24,8 @@ MaDataSensor1 = []
 MaDataSensor2 = []
 printFlag = False
 windowSize = 5
+hit1 = 0
+hit2 = 0
 
 # Initialize sensor objects
 sensor1 = IMUSensorData(SAMPLES_FOR_CALIBRATION, windowSize)
@@ -76,9 +79,14 @@ def send_midi_notes(notes, velocity=127, duration=0.05):
             midiout.send_message(note_off)
 
 def is_within_hit_zone(sensor_heading, sensor_pitch):
+    # Basic hystersis idea
+    if sensor_pitch>55:
+        hystersisAngle = 30
+    else:
+        hystersisAngle = 40
     # Check if the current sensor angles are within the hit zone of any drum hit location. (Maybe add HYSTERSIS HERE?)
     note = 0
-    if sensor_pitch<30:
+    if sensor_pitch<hystersisAngle:
         if sensor_heading<-25:
             note = 41
         elif sensor_heading>-25 and sensor_heading<25:
