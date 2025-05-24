@@ -7,7 +7,7 @@ import rtmidi
 import os
 
 # Set up the serial connection
-ser = serial.Serial('COM3', 115200, timeout=0.05)  # Use a short timeout for non-blocking behavior
+ser = serial.Serial('COM5', 115200, timeout=0.05)  # Use a short timeout for non-blocking behavior
 
 # Constants
 SAMPLES_FOR_CALIBRATION = 100
