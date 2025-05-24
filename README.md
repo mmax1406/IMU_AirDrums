@@ -32,7 +32,12 @@ To connect to cakewalk ive used loopMIDI and sent the MIDI signal via python (th
 
 ## Demonstration video
 A small video of the system working
-<video src="https://github.com/mmax1406/IMU_AirDrums/blob/main/filesForGit/demonstration.mp4" style="width: auto; height: auto;"></video>
+
+
+https://github.com/user-attachments/assets/c242c63b-c574-4aeb-8a5a-3374f447c152
+
+
+
 
 
 
