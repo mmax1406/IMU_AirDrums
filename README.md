@@ -33,8 +33,10 @@ To connect to cakewalk ive used loopMIDI and sent the MIDI signal via python (th
 ## Demonstration video
 A small video of the system working
 
+https://github.com/user-attachments/assets/ffe69c20-fb8f-49c2-923d-1a3709275ff4
 
-https://github.com/user-attachments/assets/c242c63b-c574-4aeb-8a5a-3374f447c152
+
+
 
 
 
