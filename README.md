@@ -32,7 +32,7 @@ To connect to cakewalk ive used loopMIDI and sent the MIDI signal via python (th
 
 ## Demonstration video
 A small video of the system working
-<video src="https://github.com/mmax1406/ESPNowQuadReciver/assets/83958573/7fff8d3d-69e9-45aa-8dc3-a3fcc9aecb53" style="width: auto; height: auto;"></video>
+<video src="https://github.com/mmax1406/IMU_AirDrums/blob/main/filesForGit/demonstration.mp4" style="width: auto; height: auto;"></video>
 
 
 
